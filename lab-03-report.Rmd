@@ -1,17 +1,17 @@
 ---
 title: 'EES 3310/5310 Lab #3'
 subtitle: "Exercises with the MODTRAN Model"
-author: "put your name here"
+author: "Lauryn Gayles"
 date: 'Lab: Wed. Jan. 24. Due: Wed. Jan. 31'
 fontsize: "12pt"
 output:
+  github_document:
+    toc: true
   pdf_document: 
     toc: yes
     includes:
       in_header: ees3310.sty
   word_document:
-    toc: true
-  github_document:
     toc: true
   html_document: 
     toc: true
@@ -70,12 +70,30 @@ a) **Would an additional 10 ppm of methane in the atmosphere have a larger or
    See the suggestion in the `lab-03-instructions` document.
 
 ```{r ex_4_1_a, include=TRUE, message=FALSE}
-# TODO
-# Put your R code here
+
+modtran_400_17.txt = run_modtran("my_modtran_file.txt", co2_ppm = 400, ch4_ppm = 1.7) #run with different values
+modtran_410_17.txt = run_modtran("my_modtran_file.txt", co2_ppm = 410, ch4_ppm = 1.7) #run with different values
+modtran_400_117.txt = run_modtran("my_modtran_file.txt", co2_ppm = 400, ch4_ppm = 11.7) #run with different values
+
+
+
+modtran_400_17 <- modtran_400_17.txt$i_out #isolate the IR flux 
+print(modtran_400_17) #print 
+
+modtran_410_17 <- modtran_410_17.txt$i_out #isolate the IR flux 
+print(modtran_410_17) #print 
+
+modtran_400_117 <- modtran_400_117.txt$i_out #isolate the IR flux 
+print(modtran_400_117) #print 
+
+
 ```
 
 **Answer:** _Put your answer here._ Be sure to explain your reasoning and 
 show data, plots, etc. to explain how you came up with your answer.
+
+The additional 10 ppm of methane has a larger impact than an additional 10 ppm of CO2. We can see the decrease in the IR flux was much greater with the additional methane than the additional CO2. 
+
 
 b) **Where in the spectrum does methane absorb? What concentration does it take 
    to begin to saturate the absorption in this band? Explain what you are looking 
@@ -85,14 +103,26 @@ b) **Where in the spectrum does methane absorb? What concentration does it take
    See the hints in the `lab-03-instructions` document.
 
 ```{r ex_4_1_b, include=TRUE, message=FALSE}
-# TODO
-# Put your R code here
+
+
+ch4_list = c(0,1, 2, 4, 8, 16, 32, 64, 128) #creating a list to go through the different numbers
+
+for (ch4 in ch4_list) {
+mod_data = run_modtran(co2_ppm = 0, ch4_ppm = ch4, trop_o3_ppb = 0, strat_o3_scale = 0, h2o_scale = 0, freon_scale = 0)
+p = plot_modtran(mod_data, descr = str_c(ch4, 'ppm ch4')) #setting the the variables to 0 
+plot(p) # you could also say print(p) here.
+}
+
+
+
+
+
 ```
 
-**Answer:** _Put your answer here._ Be sure to show your work and
-include any data, plots, etc. that you need in order to explain how
-you came up with your answer.
+**Answer:** 
 
+
+1300 cm-1 is the wavelength where methane absorbs. The ppm for methane seems to be around 16 ppm. 
   
 c) **Would a doubling of methane have as great an impact on the heat balance as a 
    doubling of CO~2~?**
@@ -101,14 +131,34 @@ c) **Would a doubling of methane have as great an impact on the heat balance as 
    See the suggestion in the `lab-03-instructions` document.
 
 ```{r ex_4_1_c, include=TRUE, message=FALSE}
-# TODO
-# Put your R code here
+
+m = run_modtran("my_modtran_file.txt")
+m1 = run_modtran("my_modtran_file.txt", ch4_ppm = 3.4)
+m2 = run_modtran("my_modtran_file.txt", co2_ppm = 800, ch4_ppm = 1.7)
+
+
+
+modtran <- m$i_out #isolate the IR flux 
+print(modtran_400_17) #print 
+
+modtran_1 <- m1$i_out #isolate the IR flux 
+print(modtran_410_17) #print 
+
+modtran_2 <- m2$i_out #isolate the IR flux 
+print(modtran_400_117) #print 
+
+plot_modtran(m, descr = "Baseline spectrum")
+plot_modtran(m1, descr = "Doubled CO2")
+plot_modtran(m2, descr = "Doubled CH4")
+ 
+
+
+
 ```
 
-**Answer:** _Put your answer here._ Be sure to show your work and
-include any data, plots, etc. that you need in order to explain how
-you came up with your answer.
+**Answer:** 
 
+Doubling CO2, wavelength decreases by -3.3 W/m2. Doubling CH4, wavelength decreases by -0.88 W/m2. The increase in CO2 has a larger effect because there is more CO2 present in the atmosphere.
 
 d) **What is the "equivalent CO~2~" of doubling atmospheric methane? That is to 
    say, how many ppm of CO~2~ would lead to the same change in outgoing IR 
@@ -116,53 +166,18 @@ d) **What is the "equivalent CO~2~" of doubling atmospheric methane? That is to
    change to ppm methane change?**
 
 ```{r ex_4_1_d, include=TRUE, message=FALSE}
-# TODO
-# Put your R code here
+
+matching_methane = 13 # the ppm after trial and error 
+modtran_match_ch4 = run_modtran(file.path(data_dir, "ex_4_1_ch4_match.txt"),
+                                co2_ppm = 400, ch4_ppm = matching_methane)
+
+print(modtran_match_ch4) #priting data to see teh results 
+
 ```
 
-**Answer:** _Put your answer here._ Be sure to show your work and
-include any data, plots, etc. that you need in order to explain how
-you came up with your answer.
+**Answer:** _
 
-
-## Exercise 4.2: CO~2~ (Graduate students only)
-
-a) **Is the direct effect of increasing CO~2~ on the energy output at the top of
-   the atmosphere larger in high latitudes or in the tropics?**
-
-   **Hint:**
-   See the hint in the `lab-03-instructions` document.
-
-
-```{r ex_4_2_a, include=TRUE, message=FALSE}
-# TODO
-# Put your R code here
-```
-
-**Answer:** _Put your answer here._ Be sure to show your work and
-include any data, plots, etc. that you need in order to explain how
-you came up with your answer.
-
-
-b) **Set pCO~2~ to an absurdly high value of 10,000 ppm. You will see a spike
-   in the CO~2~ absorption band. What temperature is this light coming from? 
-   Where in the atmosphere do you think this comes from?**
-
-   **Now turn on clouds and run the model again. Explain what you see.
-   Why are night-time temperatures warmer when there are clouds?**
-
-   **Hint:**
-   See the hint in the `lab-03-instructions` document and
-   for the second part of this exercise, try using "altostratus" clouds.
-
-```{r ex_4_2_b, include=TRUE, message=FALSE}
-# TODO
-# Put your R code here
-```
-
-**Answer:** _Put your answer here._ Be sure to show your work and
-include any data, plots, etc. that you need in order to explain how
-you came up with your answer.
+The answer is 13 ppm which is achieved thorugh trial and error. the iout is 295.3411. 
 
 
 ## Exercise 4.3: Water vapor
@@ -180,13 +195,20 @@ a) **How much extra outgoing IR would you get by raising the temperature of the
    See the hint in the `lab-03-instructions` document.
 
 ```{r ex_4_3_a, include=TRUE, message=FALSE}
-# TODO
-# Put your R code here
+
+modtran_baseline = run_modtran() #run the baseline modtran 
+modtran_plus_5 = run_modtran(delta_t = 5) #change the temperature variable 
+
+p_baseline = plot_modtran(modtran_baseline, descr = "Baseline spectrum") #plot
+p_5_deg = plot_modtran(modtran_plus_5, #plot 
+                        descr = "Ground temperature raised 5K")
+plot(p_baseline) #print the plot 
+
 ```
 
-**Answer:** _Put your answer here._ Be sure to show your work and
-include any data, plots, etc. that you need in order to explain how
-you came up with your answer.
+**Answer:** 
+
+We can see in the grpah that an increase in the ground temperature causes a raise in the spectrum as a whole. 
 
 b) **More water can evaporate into warm air than into cool air. Change the
    model settings to hold the water vapor at constant relative humidity 
@@ -201,13 +223,28 @@ b) **More water can evaporate into warm air than into cool air. Change the
    `run_modtran(file_name, delta_t = 5, h2o_fixed = "relative humidity")`.
 
 ```{r ex_4_3_b, include=TRUE, message=FALSE}
-# TODO
-# Put your R code here
+
+modtran_vp = run_modtran(delta_t = 5, h2o_fixed = "vapor pressure") #run modtran with temp change being 5 
+modtran_rh = run_modtran(delta_t = 5, h2o_fixed = "relative humidity") #run modtran with temp change being 5 
+
+i_base = modtran_baseline$i_out #getting the i out data 
+i_water_vapor = modtran_vp$i_out
+i_humidity = modtran_rh$i_out
+
+p_water_vapor = plot_modtran(modtran_vp, descr = "Constant vapor pressure", 
+                    i_out_ref = i_base)
+p_humidity = plot_modtran(modtran_rh, descr = "Constant relative humidity", 
+                    i_out_ref = i_base)
+plot(p_water_vapor)
+plot(p_humidity) #plotting the data 
+
+
 ```
 
-**Answer:** _Put your answer here._ Be sure to show your work and
-include any data, plots, etc. that you need in order to explain how
-you came up with your answer.
+**Answer:** 
+
+The increase in temp has an increase effect on iout when the fixed variable is water vapor. The environment is more sensitive to co2 changing when the humidity remain the same.  
+
 
 c) **Now see this effect in another way.**
 
@@ -230,10 +267,34 @@ c) **Now see this effect in another way.**
      feedback factor for water vapor. What is it?**
 
 ```{r ex_4_3_c, include=TRUE, message=FALSE}
-# TODO
-# Put your R code here
+
+
+i_base = modtran_baseline$i_out
+
+modtran_800co2 = run_modtran(co2_ppm = 800) #run modtran with co2 at 800 ppm 
+i_vapor_double = modtran_800co2$i_out #get the iout value 
+
+dt_vp = 0.76
+modtran_vp_dt = run_modtran(file.path(data_dir, "ex_4_3_vp_dt.txt"),
+                            co2_ppm = 800, delta_t = dt_vp) #run modtran with co2 at 800 ppm
+i_vp_dt = modtran_vp_dt$i_out #get the iout value
+
+modtran_2x_rh = run_modtran(file.path(data_dir, "ex_4_3_2x_co2_rh_.txt"),#run modtran with co2 at 800 ppm
+                            co2_ppm = 800, h2o_fixed = "relative humidity")
+i_2x_rh = modtran_2x_rh$i_out
+
+dt_rh = 1.21
+modtran_rh_dt = run_modtran(file.path(data_dir, "ex_4_3_rh_dt.txt"),
+                            co2_ppm = 800, delta_t = dt_rh, 
+                            h2o_fixed = "relative humidity")
+i_rh_dt = modtran_rh_dt$i_out
+
+feedback = dt_rh / dt_vp
+
+print(feedback) # print to see all values 
+
 ```
 
-**Answer:** _Put your answer here._ Be sure to show your work and
-include any data, plots, etc. that you need in order to explain how
-you came up with your answer.
+**Answer:** _Put your answer here._ 
+
+The answer is 1.592 for the feedback factor. This shows the the ratio of the temp change with relative humidity fixed to that of the temp change with water vapor fixed. 
