@@ -3,7 +3,7 @@ title: 'EES 3310/5310 Lab #3'
 subtitle: "Exercises with the MODTRAN Model"
 author: "Lauryn Gayles"
 date: 'Lab: Wed. Jan. 24. Due: Wed. Jan. 31'
-fontsize: "12pt"
+fontsize: ""
 output:
   github_document:
     toc: true
