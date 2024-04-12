@@ -1,0 +1,290 @@
+---
+title: "Lab Report for Final Presenation"
+subtitle: "Lab 8"
+author: "Lauryn Gayles & Thomas Riker"
+date: "12 April 2024-"
+fontsize: 12pt
+output: 
+  word_document:
+    toc: yes
+  pdf_document:
+    includes:
+      in_header: "ees3310.sty"
+    toc: yes
+  html_document:
+    toc: yes
+  github_document:
+    toc: yes
+---
+```{r setup, include=FALSE}
+knitr::knit_hooks$set(inline = function(x) { knitr:::format_sci(x, 'md')})
+knitr::opts_chunk$set(echo = TRUE, include = TRUE, cache = FALSE)
+
+if (knitr::is_latex_output()) {
+  message("Setting PDF plot hook.")
+  new_plot_hook <- function(x, options)
+    paste("\n", knitr::hook_plot_tex(x, options), "\n")
+
+  knitr::knit_hooks$set(plot = new_plot_hook)
+  knitr::opts_chunk$set(fig.width = 5, fig.height = 5)
+} else {
+  message("Not using PDF output.")
+}
+
+
+options(dplyr.summarise.inform = FALSE)
+
+# This section loads necessary R libraries and sources scripts that define
+# useful functions format_md.
+#
+data_dir = "_data"
+script_dir = "_scripts"
+
+if (!dir.exists(data_dir)) dir.create(data_dir)
+
+library(tidyverse)
+library(scales)
+library(knitr)
+
+theme_set(theme_bw(base_size = 15))
+
+source(file.path(script_dir, "utils.R"), chdir = T)
+source(file.path(script_dir, "format_md.R"), chdir = T)
+source(file.path(script_dir, "geocarb.R"), chdir = T)
+```
+Lauryn Gayles & Thomas Riker 
+EES3310 Global Climate Change 
+Lab Presentation Report 
+12 April 2024
+
+Introduction
+
+Initially, we had difficulty deciding on a subject for this project. Our first idea was to study the implementation of cap and trade and how that affects CO2 levels in the atmosphere as we wanted to look at the direct effect of climate policy on GHG emissions. Yet, we found that it would be difficult to measure the true effects of this and instead decided to look at the GEOCarb model to determine what questions we could answer using it. One query we had was the extent to which plants affect CO2 levels and silicate weathering. We know that deforestation and land use changes are an increasing issue and an in-depth understanding of how these changes can affect GHG emissions is crucial. Our project thus seeks to understand the extent to which the presence of plants can affect CO2 emissions and silicate weathering. This has lasting implications for decisions regarding current land use and urbanization in formerly green areas. 
+
+Methods
+
+Our project utilizes the University of Chicago’s GEOCARB model, a derivative of Robert Berner’s Geocarb model for the geologic carbon cycle. The GEOCARB model runs in two basic stages, first in the initial Spinup stage, then a transition to a Simulation stage at Year 0. Plots only show the last few years of the Spinup stage, after it has run for long enough to reach equilibrium for the Spinup conditions. You can change model parameters of the CO2 degassing rate (the flux of CO2 from the solid Earth to the atmosphere), the existence of land plants, and the relative land areas. Additionally, there is the option to release a Spike of CO2 to the atmosphere at the instant of the transition from the Spinup to the Simulation stages (GEOCARB). Other parameters, such as geologic setting and mean latitude of continents, were left at their default values. Our parameters include a 1000 Gton C release at the transition and a constant CO2 degassing rate across both stages. Then, we ran the GEOCARB model three times, varying the presence of land plants and the relative land area in both the spinup and simulation phase in order to see the effect of altering these parameters on atmospheric CO2 (ppm) and the silicate weathering rate. In our first alteration, we compared simulations in which plants were either present or absent. In the second alteration, we decreased the land area from a default value of 1 to 0.75, while varying the presence of plants in simulation. In our third and final alteration, we varied the presence of plants in the spinup phase while excluding plants entirely from the simulation phase. 
+
+
+
+Results 
+
+First Alteration: CO2 Spike & Plant Variation 
+In our first alteration we see a CO2 spike at 1000 PPM after the initial spinup phase. In the comparison of “CO2 PPM” and “Year” we can see there are stark differences in the presence and absence of plants. In the absence of plants, there is an initial spike which reaches approximately 700 PPM CO2 which then slowly levels off reaching an equilibrium of about 500 PPM CO2 after millions of years. In the presence of plants there is again a spike but the leveling off point is much lower. We see it is around 350 PPM CO2, thus almost reaching the initial equilibrium about. This relationship is shown in the figure below. 
+
+
+Next we look at the effects of the CO2 spike with the absence and presence of plants on silicate weathering. We can see that as with the CO2 levels there is an initial spike in the silicate weathering in both instances, although this spike is much higher in instances in which plants are present. Likewise, in the absence of plants the rate of silicate weathering reaches an equilibrium level much lower than the initial level. Further, in the presence of plants, the rate of silicate weathering  reaches an equilibrium of around 8.5 trillion moles per year; much higher than the initial rate. 
+
+```{r}
+
+
+
+geocarb_data = run_geocarb(co2_spike = 1000, degas_spinup = 7.5, degas_sim = 7.5, plants_spinup = TRUE, plants_sim = FALSE) # run simulation with co2_spike at 1000
+print(geocarb_data) #print data 
+
+p <- ggplot(geocarb_data, aes(x = year, y = co2_atmos)) + geom_line(size = 1) +  #plot the graph with year on x axis 
+  labs(x = "Year", y = "Atmospheric CO2 (ppm)") 
+p + ggtitle("CO2 1000 PPM Spike, No Plants in Simulation") #name the graph
+
+
+geocarb_2k_spike = run_geocarb(co2_spike = 1000, degas_spinup = 7.5,  #run the second model with the spike
+                               degas_sim = 7.5, plants_spinup = TRUE, plants_sim = FALSE)
+
+weathering_history = geocarb_2k_spike %>%  #run the silicate weathering model 
+   select(year, silicate_weathering) %>%
+   pivot_longer(cols = -year, names_to = "Weathering", values_to = "rate") %>%
+   mutate(Weathering = str_replace_all(Weathering, "_weathering", "") %>%
+             ordered(levels = c("silicate")))
+
+p <- ggplot(weathering_history, aes(x = year, y = rate, color = Weathering)) + 
+   geom_line(size = 1, na.rm = TRUE) +
+   scale_color_brewer(palette = "Dark2") +  #plot the data
+   xlim(-500, 1000) +
+   labs(x = "Year", y = "Rate (trillion moles per year)")
+p + ggtitle("CO2 1000 PPM Spike, No Plants in Simulation") #name the graph 
+
+#CO2 spike at 1000, yes plants in sim 
+
+geocarb_data = run_geocarb(co2_spike = 1000, degas_spinup = 7.5, degas_sim = 7.5, plants_spinup = TRUE, plants_sim = TRUE) # run simulation with co2_spike at 1000
+print(geocarb_data) #print data 
+
+p <-ggplot(geocarb_data, aes(x = year, y = co2_atmos)) + geom_line(size = 1) +  #plot the graph with year on x axis 
+  labs(x = "Year", y = "Atmospheric CO2 (ppm)")   
+p + ggtitle("CO2 spike at 1000 PPM, Plants Present in Simulation ") #name the graph
+
+
+geocarb_2k_spike = run_geocarb(co2_spike = 1000, degas_spinup = 7.5,  #run other model with different parameters
+                               degas_sim = 7.5, plants_spinup = TRUE, plants_sim = TRUE)
+
+weathering_history = geocarb_2k_spike %>%  #
+   select(year, silicate_weathering) %>%
+   pivot_longer(cols = -year, names_to = "Weathering", values_to = "rate") %>%
+   mutate(Weathering = str_replace_all(Weathering, "_weathering", "") %>%
+             ordered(levels = c("silicate")))
+
+p <- ggplot(weathering_history, aes(x = year, y = rate, color = Weathering)) + 
+   geom_line(size = 1, na.rm = TRUE) +
+   scale_color_brewer(palette = "Dark2") +
+   xlim(-500, 1000) +
+   labs(x = "Year", y = "Rate (trillion moles per year)")
+p + ggtitle("CO2 spike at 1000 PPM, Plants Present in Simulation ")
+```
+
+Second Alteration: CO2 Spike, Plant Variation, Minimized Land 
+In our second alteration we kept the parameters from the first alteration but decreased the land area to .75 of the original, thus cutting the land area by 1/4th. In the graphing of CO2 and Year we again see a siimialr relationship. However, we see one divergence in the new equilibrium of CO2 in both graphs after the initial CO2 spike. As the land area decreases by 1/4th, so too do the CO2 levels reach a higher equilibrium compared to the land area with no minimization. Again, as with the original case we see that in the instance of no plants there is a larger increase in CO2 levels. 
+
+
+Next we look at the changes in silicate weathering as a results of a decrease in land area, along with the former variations. When plants are present in the simulation we see that again, the weathering rate drops significantly, even below the graph when land area is kept stable. Likewise, when there is no plants in the simulation the rate of weathering is even lower, around 5 trillion miles year. 
+
+
+
+```{r}
+#land area sim less , plants true 
+
+geocarb_data = run_geocarb(co2_spike = 1000, degas_spinup = 7.5, degas_sim = 7.5, plants_spinup = TRUE, plants_sim = TRUE, land_area_sim = .75) # run simulation with co2_spike at 0
+print(geocarb_data) #print data 
+
+p <-ggplot(geocarb_data, aes(x = year, y = co2_atmos)) + geom_line(size = 1) +  #plot the graph with year on x axis 
+  labs(x = "Year", y = "Atmospheric CO2 (ppm)")   
+p + ggtitle("Land Area .75 , Plants Present in Simulation")
+
+geocarb_2k_spike = run_geocarb(co2_spike = 1000, degas_spinup = 7.5, 
+                               degas_sim = 7.5, plants_spinup = TRUE, plants_sim = TRUE, land_area_sim = .75)
+
+weathering_history = geocarb_2k_spike %>% 
+   select(year, silicate_weathering) %>%
+   pivot_longer(cols = -year, names_to = "Weathering", values_to = "rate") %>%
+   mutate(Weathering = str_replace_all(Weathering, "_weathering", "") %>%
+             ordered(levels = c("silicate")))
+
+p <- ggplot(weathering_history, aes(x = year, y = rate, color = Weathering)) + 
+   geom_line(size = 1, na.rm = TRUE) +
+   scale_color_brewer(palette = "Dark2") +
+   xlim(-500, 1000) +
+   labs(x = "Year", y = "Rate (trillion moles per year)")
+p + ggtitle("Land Area .75 , Plants Present in Simulation")
+
+#land area sim less , plants false
+
+geocarb_data = run_geocarb(co2_spike = 1000, degas_spinup = 7.5, degas_sim = 7.5, plants_spinup = TRUE, plants_sim = FALSE, land_area_sim = .75) # run simulation with co2_spike at 1000
+print(geocarb_data) #print data 
+
+p <-ggplot(geocarb_data, aes(x = year, y = co2_atmos)) + geom_line(size = 1) +  #plot the graph with year on x axis 
+  labs(x = "Year", y = "Atmospheric CO2 (ppm)")   
+
+p + ggtitle("Land Area .75 , No Plants Present in Simulation")
+
+geocarb_2k_spike = run_geocarb(co2_spike = 1000, degas_spinup = 7.5, degas_sim = 7.5, plants_spinup = TRUE, plants_sim = FALSE, land_area_sim = .75)
+
+weathering_history = geocarb_2k_spike %>% 
+   select(year, silicate_weathering) %>%
+   pivot_longer(cols = -year, names_to = "Weathering", values_to = "rate") %>%
+   mutate(Weathering = str_replace_all(Weathering, "_weathering", "") %>%
+             ordered(levels = c("silicate")))
+
+p <- ggplot(weathering_history, aes(x = year, y = rate, color = Weathering)) + 
+   geom_line(size = 1, na.rm = TRUE) +
+   scale_color_brewer(palette = "Dark2") +
+   xlim(-500, 1000) +
+   labs(x = "Year", y = "Rate (trillion moles per year)")
+p + ggtitle("Land Area .75 , No Plants Present in Simulation")
+
+
+```
+
+Third Alteration: CO2 Spike, Plant Variation in Spin Up Phase and Simulation
+
+In this last variation, we chose to alter the presence of plants in the Spinup phase. In the first graph that shows atmospheric CO2 versus Year we can see that when no plants are present in the Spin Up or simulation the CO2 eventually reaches about the initial equilibrium, though after a large amount of time passes. However, we do see that even though the amount levels off, with no plants in the simulation the CO2 levels of 500 PPM are still high. However, in the instance where plants are present in the Spin Up but not the simulation we can see that the baseline of carbon dioxide decreases drastically from the baseline. This allows for CO2 levels to be drastically decreased and shows the effectiveness of plants in doing so. 
+
+Lastly, we look at how changes in the Spinup phase affect the rate of silicate weathering. In both cases where plants are present or absent in the spin up phase we see an increase in the rate of silicate weathering. However, when plants are present in the Spin Up but not the simulation, the rate of weathering is significantly higher than when they are absent in both. 
+
+
+
+```{r}
+#CO2 spike, no plants in spinup or sim 
+
+geocarb_data = run_geocarb(co2_spike = 1000, degas_spinup = 7.5, degas_sim = 7.5, plants_spinup = FALSE, plants_sim = FALSE, land_area_sim = 1) # run simulation with co2_spike at 0
+print(geocarb_data) #print data 
+
+p <-ggplot(geocarb_data, aes(x = year, y = co2_atmos)) + geom_line(size = 1) +  #plot the graph with year on x axis 
+  labs(x = "Year", y = "Atmospheric CO2 (ppm)")   
+
+p + ggtitle("CO2 Spike at 1000 PPM, No Plants in Spinup or Simulation ")
+
+geocarb_2k_spike = run_geocarb(co2_spike = 1000, degas_spinup = 7.5, degas_sim = 7.5, plants_spinup = FALSE, plants_sim = FALSE, land_area_sim = 1)
+
+weathering_history = geocarb_2k_spike %>% 
+   select(year, silicate_weathering) %>%
+   pivot_longer(cols = -year, names_to = "Weathering", values_to = "rate") %>%
+   mutate(Weathering = str_replace_all(Weathering, "_weathering", "") %>%
+             ordered(levels = c("silicate")))
+
+p <- ggplot(weathering_history, aes(x = year, y = rate, color = Weathering)) + 
+   geom_line(size = 1, na.rm = TRUE) +
+   scale_color_brewer(palette = "Dark2") +
+   xlim(-500, 1000) +
+   labs(x = "Year", y = "Rate (trillion moles per year)")
+p + ggtitle("CO2 Spike at 1000 PPM, No Plants in Spinup or Simulation ")
+
+
+
+#CO2 spike, no plants in spinup, plants in sim  
+
+geocarb_data = run_geocarb(co2_spike = 1000, degas_spinup = 7.5, degas_sim = 7.5, plants_spinup = FALSE, plants_sim = TRUE, land_area_sim = 1) # run simulation with co2_spike at 0
+print(geocarb_data) #print data 
+
+p <-ggplot(geocarb_data, aes(x = year, y = co2_atmos)) + geom_line(size = 1) +  #plot the graph with year on x axis 
+  labs(x = "Year", y = "Atmospheric CO2 (ppm)")   
+
+p + ggtitle("CO2 Spike at 1000 PPM, Plants: Spinup No,Simulation Yes")
+
+geocarb_2k_spike = run_geocarb(co2_spike = 1000, degas_spinup = 7.5, degas_sim = 7.5, plants_spinup = FALSE, plants_sim = TRUE, land_area_sim = 1)
+
+weathering_history = geocarb_2k_spike %>% 
+   select(year, silicate_weathering) %>%
+   pivot_longer(cols = -year, names_to = "Weathering", values_to = "rate") %>%
+   mutate(Weathering = str_replace_all(Weathering, "_weathering", "") %>%
+             ordered(levels = c("silicate")))
+
+p <- ggplot(weathering_history, aes(x = year, y = rate, color = Weathering)) + 
+   geom_line(size = 1, na.rm = TRUE) +
+   scale_color_brewer(palette = "Dark2") +
+   xlim(-500, 1000) +
+   labs(x = "Year", y = "Rate (trillion moles per year)")
+p + ggtitle("CO2 Spike at 1000 PPM, Plants: Spinup no, Simulation Yes")
+
+
+```
+
+Conclusion / Discussion 
+
+Our research using the GEOCARB model provided valuable insights into the effects that plant presence and land area have on atmospheric CO2 levels and silicate weathering rates. We found that the inclusion of plants during the spin-up phase leads to a lower pre-spike baseline CO2 level. The presence of plants in the simulation phase causes initial sequestration of CO2, causing the spikes to be less severe. When plants are either present or absent for both phases, the post-spike atmospheric CO2 levels return to, over hundreds of thousands of years, their spin-up baseline. When plants are absent during the spin-up phase but present during the simulation phase, significant amounts of CO2 are sequestered and the simulation CO2 equilibrium value (around 280 ppm) is much lower than the spin-up value (around 500 ppm). Decreasing the land area to 0.75 from 1 made it harder for plants to sequester CO2, as decreased land area means decreased plants. With plants in the simulation, CO2 levels leveled out below the peak CO2 spike; without plants, CO2 levels continued to increase to over 1,000 ppm over hundreds of thousands of years. 
+
+We also analyzed how plant presence and land area have on silicate weathering. After the initial CO2 spike, weathering rates increase substantially because the increase in CO2 causes an increase in temperature, both of which ultimately cause an increase in reaction time and in acidity. When plants are present in the simulation phase, weathering rates are increased. This is likely because plant roots break up soil and rock into finer particles. When the land area decreased to 0.75, weathering rates also decreased, more drastically so when that decrease was coupled with plant absence. 
+
+Our findings emphasize the critical role of plants in mitigating atmospheric CO2 levels, specifically the importance of preserving forests and wilderness and increasing parks and green spaces in urban areas as a means of mitigating CO2 emissions. This research highlights plants key role as essentially carbon storage, but their role is much more complex, acting as reducers of the urban heat island effect, conservers of biodiversity, managers of storm and floodwater, air filters, and much more. Our findings emphasize the importance of incorporating vegetation conservation and sustainable land management practices into broader climate action plans. Preserving, creating, and expanding natural ecosystems help buffer against CO2 spikes and enhance natural carbon sinks, while also promoting resilience to climate change impacts such as temperature rise and extreme weather events. Additionally, the idea that decreases in land area cause significant increases in CO2 levels is incredibly important in the face of sea level rise, which is problematic for several reasons. Flooding and erosion puts Coastal communities at risk of being submerged, displacing populations and threatening infrastructure, habitats, and livelihoods. Overall, our research highlights the intricate linkages between vegetation, land, and climate dynamics, highlighting the importance of natural approaches to addressing climate change challenges. 
+
+Our findings on plant presence and land area on silicate weathering have broad implications beyond this research. Changes to the silicate weathering rate causes changes to the global carbon cycle, as silicate weathering plays a crucial role in the long-term regulation of atmospheric CO2 levels through the removal of carbon from the atmosphere and its storage in carbonate minerals. Increases to the silicate weathering rate would also hasten erosion rates, as weathering processes contribute to the breakdown of rocks meaning that changes to the weathering rate affect erosion patterns, sediment transport, and landscape evolution. Weathering rate is intricately linked to climate feedbacks, as, for example, increased weathering rates may enhance atmospheric CO2 drawdown, leading to cooling effects over geological timescales. Generally speaking, changes in atmospheric CO2 levels cause substantial, cascading changes to geological processes, which ultimately influence the Earth’s carbon cycle and climate regulation.
+
+
+
+
+Citations: 
+
+“GEOCARB Geologic Carbon Cycle.” GEOCARB Help, climatemodels.uchicago.edu/geocarb/geocarb.doc.html. Accessed 11 Apr. 2024. 
+
+Oeser, Ralf A., and Friedhelm von Blanckenburg. "Do degree and rate of silicate weathering depend on plant productivity?." Biogeosciences 17 (2020): 4883-4917.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
