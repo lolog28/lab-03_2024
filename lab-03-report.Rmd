@@ -5,13 +5,13 @@ author: "Lauryn Gayles"
 date: 'Lab: Wed. Jan. 24. Due: Wed. Jan. 31'
 fontsize: ""
 output:
-  github_document:
+  word_document:
     toc: true
   pdf_document: 
     toc: yes
     includes:
       in_header: ees3310.sty
-  word_document:
+  github_document:
     toc: true
   html_document: 
     toc: true
